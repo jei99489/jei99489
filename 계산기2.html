@@ -1,0 +1,692 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CASIO fx-570MS 공학용 계산기</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 모바일 터치 스크롤 방지 및 더블탭 줌 차단 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0a0a0a;
+    }
+    body {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* 도트 LCD 스크린 텍스처 효과 */
+    .lcd-screen {
+      background-image: radial-gradient(circle, rgba(0,0,0,0.1) 0.5px, transparent 0.5px);
+      background-size: 3px 3px;
+    }
+    /* 스크롤바 완전 제거 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* 버튼 클릭 시 미세한 안쪽 입체감 셰이딩 */
+    .key-btn {
+      position: relative;
+      transition: all 0.04s ease;
+    }
+    .key-btn:active {
+      transform: scale(0.94);
+      filter: brightness(0.85);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center p-2 sm:p-4">
+
+  <!-- 계산기 실물 하우징 바디 -->
+  <div class="w-full max-w-[375px] h-full max-h-[780px] rounded-[2.2rem] bg-gradient-to-b from-[#3a3937] via-[#2a2927] to-[#181716] p-4 sm:p-5 shadow-[0_25px_60px_rgba(0,0,0,0.95)] border border-neutral-700/45 flex flex-col justify-between relative">
+    
+    <!-- 상단 제조사 브랜드 로고 및 설명란 -->
+    <div class="flex justify-between items-center px-2 pt-1 mb-2">
+      <div>
+        <span class="text-white font-black tracking-widest text-base italic leading-none">CASIO</span>
+        <span class="text-[8px] text-neutral-400 block -mt-1 tracking-widest font-mono">S-V.P.A.M.</span>
+      </div>
+      <div class="text-right">
+        <span class="text-gray-300 font-bold text-xs tracking-tight block leading-none">fx-570MS</span>
+        <span class="text-[8px] text-yellow-500 font-bold block font-mono">2nd edition</span>
+      </div>
+    </div>
+
+    <!-- LCD 디스플레이 패널 유닛 -->
+    <div class="relative rounded-lg bg-[#0e0f0d] p-1.5 mb-2.5 border border-black/80">
+      
+      <!-- 상단 도트 표시판 인디케이터 라인 -->
+      <div class="flex justify-between items-center px-1.5 py-0.5 text-[8px] font-mono text-emerald-950 select-none bg-[#9bbca6] rounded-t-sm border-b border-emerald-950/20">
+        <div class="flex gap-2.5 font-bold">
+          <span id="ind-shift" class="opacity-15">S</span>
+          <span id="ind-alpha" class="opacity-15">A</span>
+          <span id="ind-m" class="opacity-15">M</span>
+        </div>
+        <div class="flex gap-2 font-bold">
+          <span id="ind-deg" class="opacity-100">DEG</span>
+          <span id="ind-rad" class="opacity-15">RAD</span>
+        </div>
+      </div>
+
+      <!-- 메인 2-Line 도트 LCD 스크린 -->
+      <div id="lcd-bg" class="lcd-screen relative h-[78px] px-3.5 py-2 flex flex-col justify-between font-mono rounded-b-sm bg-[#9bbca6] text-emerald-950 transition-colors duration-300">
+        
+        <!-- 입력부 (Line 1) -->
+        <div id="lcd-input-container" class="text-left text-[15px] font-bold tracking-wider h-6 overflow-hidden flex items-center">
+          <span id="lcd-input" class="whitespace-nowrap overflow-x-auto no-scrollbar block w-full">0</span>
+        </div>
+
+        <!-- 결과부 (Line 2) -->
+        <div id="lcd-result" class="text-right text-[21px] font-black tracking-tighter h-8 flex items-end justify-end overflow-hidden">
+          0
+        </div>
+
+        <!-- 반사 유리 가상 필터 코팅 -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none rounded-b-sm"></div>
+      </div>
+    </div>
+
+    <!-- 조작 토글 제어 단락 -->
+    <div class="flex justify-between items-center mb-2 px-1 text-[10px]">
+      <div class="flex gap-1.5">
+        <button id="btn-backlight" class="px-2 py-0.5 rounded font-bold bg-yellow-400 text-black shadow active:scale-95 transition-all text-[9px]">
+          💡 LCD 조명
+        </button>
+        <button id="btn-sound" class="px-2 py-0.5 rounded font-bold bg-emerald-700 text-white shadow active:scale-95 transition-all text-[9px]">
+          🔊 소리켬
+        </button>
+      </div>
+      <span class="text-neutral-400 font-mono text-[9px]">조이스틱 [▲/▼]: 이전수식</span>
+    </div>
+
+    <!-- 상단 주요 펑션 패널 (SHIFT, ALPHA, REPLAY 조이스틱, MODE, CLR) -->
+    <div class="grid grid-cols-5 gap-1 items-center mb-3">
+      
+      <!-- SHIFT KEY -->
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-yellow-500 font-extrabold mb-0.5">SHIFT</span>
+        <button id="btn-shift" class="key-btn w-full py-1.5 rounded-md bg-[#1d1c1b] text-yellow-500 text-[10px] font-black border-t border-white/10 shadow">
+          S
+        </button>
+      </div>
+
+      <!-- ALPHA KEY -->
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-pink-500 font-extrabold mb-0.5">ALPHA</span>
+        <button id="btn-alpha" class="key-btn w-full py-1.5 rounded-md bg-[#1d1c1b] text-pink-500 text-[10px] font-black border-t border-white/10 shadow">
+          A
+        </button>
+      </div>
+
+      <!-- REPLAY 4방향 원형 조이스틱 패드 -->
+      <div class="col-span-2 flex justify-center">
+        <div class="relative w-[76px] h-[76px] rounded-full bg-[#1e1d1c] shadow-lg border border-neutral-700/80 flex items-center justify-center overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-tr from-[#131211] via-[#333230] to-[#131211] rounded-full"></div>
+          
+          <!-- UP -->
+          <button id="btn-up" class="absolute top-0 w-8 h-5.5 flex items-center justify-center text-gray-300 active:text-white active:scale-75 z-10">
+            <span class="text-[9px]">▲</span>
+          </button>
+          <!-- DOWN -->
+          <button id="btn-down" class="absolute bottom-0 w-8 h-5.5 flex items-center justify-center text-gray-300 active:text-white active:scale-75 z-10">
+            <span class="text-[9px]">▼</span>
+          </button>
+          <!-- LEFT -->
+          <button id="btn-left" class="absolute left-0 h-8 w-5.5 flex items-center justify-center text-gray-300 active:text-white active:scale-75 z-10">
+            <span class="text-[9px]">◀</span>
+          </button>
+          <!-- RIGHT -->
+          <button id="btn-right" class="absolute right-0 h-8 w-5.5 flex items-center justify-center text-gray-300 active:text-white active:scale-75 z-10">
+            <span class="text-[9px]">▶</span>
+          </button>
+
+          <!-- 중앙 메탈 실린더 효과 -->
+          <div class="w-[30px] h-[30px] rounded-full bg-[#272625] border border-neutral-800 flex items-center justify-center pointer-events-none z-0">
+            <span class="text-[7px] text-neutral-400 font-extrabold tracking-tighter">REPLAY</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODE / CLR KEY -->
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-yellow-500 font-extrabold mb-0.5">CLR</span>
+        <button id="btn-mode" class="key-btn w-full py-1.5 rounded-md bg-[#1d1c1b] text-white text-[9px] font-bold border-t border-white/10 shadow">
+          MODE
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 과학 기술 연산 특수 수식 키보드 (6열 3행) -->
+    <div class="grid grid-cols-6 gap-x-1 gap-y-2 mb-3 px-0.5">
+      
+      <!-- Row 1 -->
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">ab/c</span>
+        <button onclick="pressKey('(')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">ab/c</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">∛</span>
+        <button onclick="pressKey('√(')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">√</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">x³</span>
+        <button onclick="pressKey('²')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">x²</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">10^x</span>
+        <button onclick="pressKey('^')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">^</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">e^x</span>
+        <button onclick="pressKey('log(')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">log</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">e</span>
+        <button onclick="pressKey('ln(')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">ln</button>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">x!</span>
+        <button onclick="pressKey('!')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">x!</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">sin⁻¹</span>
+        <button onclick="pressFunc('sin')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">sin</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">cos⁻¹</span>
+        <button onclick="pressFunc('cos')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">cos</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">tan⁻¹</span>
+        <button onclick="pressFunc('tan')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">tan</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">STO</span>
+        <button onclick="pressKey('STO')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">STO</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">RCL</span>
+        <button onclick="pressKey('RCL')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">RCL</button>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">nPr</span>
+        <button onclick="pressKey('(')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">(</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">nCr</span>
+        <button onclick="pressKey(')')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">)</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">Pol</span>
+        <button onclick="pressKey(',')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-white font-bold border-t border-white/5 shadow">,</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-pink-500 font-bold block h-3 leading-none">M</span>
+        <button onclick="pressKey('M+')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-orange-400 font-black border-t border-white/5 shadow">M+</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">M-</span>
+        <button onclick="pressKey('M-')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[9px] text-yellow-500 font-bold border-t border-white/5 shadow">M-</button>
+      </div>
+      <div class="text-center">
+        <span class="text-[7px] text-yellow-500 font-bold block h-3 leading-none">Ran#</span>
+        <button onclick="pressKey('Ran#')" class="key-btn w-full py-1 rounded bg-[#2a2927] text-[7.5px] text-neutral-300 font-bold border-t border-white/5 shadow">Ran#</button>
+      </div>
+
+    </div>
+
+    <!-- 하단 메인 기본 키패드 (5열 4행) -->
+    <div class="grid grid-cols-5 gap-1.5 sm:gap-2 flex-1 max-h-[300px] min-h-[220px]">
+      
+      <!-- Row 1 -->
+      <button onclick="pressKey('7')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">7</button>
+      <button onclick="pressKey('8')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">8</button>
+      <button onclick="pressKey('9')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">9</button>
+      <button onclick="pressKey('DEL')" class="key-btn rounded-xl bg-[#d9534f] text-white font-black text-xs shadow border-b-[3px] border-red-700">DEL</button>
+      <button onclick="pressKey('AC')" class="key-btn rounded-xl bg-[#d9534f] text-white font-black text-xs shadow border-b-[3px] border-red-700">AC</button>
+
+      <!-- Row 2 -->
+      <button onclick="pressKey('4')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">4</button>
+      <button onclick="pressKey('5')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">5</button>
+      <button onclick="pressKey('6')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">6</button>
+      <button onclick="pressKey('×')" class="key-btn rounded-xl bg-[#3a3937] text-white font-black text-xl shadow border-b-[3px] border-neutral-600">×</button>
+      <button onclick="pressKey('÷')" class="key-btn rounded-xl bg-[#3a3937] text-white font-black text-xl shadow border-b-[3px] border-neutral-600">÷</button>
+
+      <!-- Row 3 -->
+      <button onclick="pressKey('1')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">1</button>
+      <button onclick="pressKey('2')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">2</button>
+      <button onclick="pressKey('3')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">3</button>
+      <button onclick="pressKey('+')" class="key-btn rounded-xl bg-[#3a3937] text-white font-black text-xl shadow border-b-[3px] border-neutral-600">+</button>
+      <button onclick="pressKey('-')" class="key-btn rounded-xl bg-[#3a3937] text-white font-black text-xl shadow border-b-[3px] border-neutral-600">-</button>
+
+      <!-- Row 4 -->
+      <button onclick="pressKey('0')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">0</button>
+      <button onclick="pressKey('.')" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-950 font-black text-xl shadow border-b-[3px] border-neutral-400">.</button>
+      <button onclick="pressConstant()" class="key-btn rounded-xl bg-[#dedcd8] text-neutral-700 font-black text-xs shadow border-b-[3px] border-neutral-400 flex flex-col items-center justify-center">
+        <span class="text-[7px] text-yellow-600 leading-none">e</span>
+        <span class="leading-none">π</span>
+      </button>
+      <button onclick="pressKey('Ans')" class="key-btn rounded-xl bg-[#dedcd8] text-[#555] font-extrabold text-[11px] shadow border-b-[3px] border-neutral-400">Ans</button>
+      <button onclick="calculate()" class="key-btn rounded-xl bg-[#3a3937] text-white font-black text-xl shadow border-b-[3px] border-neutral-600">=</button>
+
+    </div>
+
+    <!-- 브랜드 가이드라인 캡션 하부 -->
+    <div class="mt-2 text-center pb-1">
+      <span class="text-[7.5px] text-neutral-500 tracking-widest font-mono">TWO-LINE DISPLAY / SUPER V.P.A.M.</span>
+    </div>
+
+  </div>
+
+  <!-- 오디오 가속 및 수식 처리 엔진 스크립트 -->
+  <script>
+    let inputExpr = ""; // 수식 문자열
+    let cursorPos = 0;  // 커서의 인덱스 위치
+    let isShift = false; // SHIFT 토글
+    let isAlpha = false; // ALPHA 토글
+    let angleMode = "DEG"; // DEG, RAD 각도
+    let memoryValue = 0; // M 변수
+    let history = []; // 수식 이전 계산 로그
+    let historyIndex = -1; // 이력 탐색 전용 인덱스
+    let isBacklightOn = true; // 백라이트 온오프 (기본 ON)
+    let isSoundOn = true; // 소리 설정
+
+    // 소리 오디오 컨텍스트
+    let audioCtx = null;
+
+    function playClick() {
+      if (!isSoundOn) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1100, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.025);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.025);
+      } catch (err) {}
+    }
+
+    const lcdInput = document.getElementById("lcd-input");
+    const lcdResult = document.getElementById("lcd-result");
+    const lcdBg = document.getElementById("lcd-bg");
+    
+    const indShift = document.getElementById("ind-shift");
+    const indAlpha = document.getElementById("ind-alpha");
+    const indM = document.getElementById("ind-m");
+    const indDeg = document.getElementById("ind-deg");
+    const indRad = document.getElementById("ind-rad");
+
+    // 깜빡이는 커서 상태
+    let cursorState = true;
+    setInterval(() => {
+      cursorState = !cursorState;
+      renderScreen();
+    }, 480);
+
+    function renderScreen() {
+      indShift.style.opacity = isShift ? "1" : "0.15";
+      indAlpha.style.opacity = isAlpha ? "1" : "0.15";
+      indM.style.opacity = (memoryValue !== 0) ? "1" : "0.15";
+      if (angleMode === "DEG") {
+        indDeg.style.opacity = "1";
+        indRad.style.opacity = "0.15";
+      } else {
+        indDeg.style.opacity = "0.15";
+        indRad.style.opacity = "1";
+      }
+
+      if (inputExpr.length === 0) {
+        lcdInput.innerHTML = `<span class="opacity-30">${cursorState ? "■" : ""}0</span>`;
+        return;
+      }
+
+      const before = inputExpr.slice(0, cursorPos);
+      const after = inputExpr.slice(cursorPos);
+      const curChar = cursorState ? "■" : " ";
+
+      lcdInput.innerHTML = `
+        <span class="inline-block">${before}</span><span class="inline-block w-2 text-center font-bold text-emerald-950">${curChar}</span><span class="inline-block">${after}</span>
+      `;
+      
+      const container = document.getElementById("lcd-input-container");
+      container.scrollLeft = container.scrollWidth;
+    }
+
+    // LCD 전등 제어
+    document.getElementById("btn-backlight").addEventListener("click", () => {
+      playClick();
+      isBacklightOn = !isBacklightOn;
+      if (isBacklightOn) {
+        lcdBg.classList.remove("bg-[#81997d]");
+        lcdBg.classList.add("bg-[#9bbca6]");
+        lcdBg.style.boxShadow = "0 0 12px rgba(155, 188, 166, 0.3)";
+      } else {
+        lcdBg.classList.remove("bg-[#9bbca6]");
+        lcdBg.classList.add("bg-[#81997d]");
+        lcdBg.style.boxShadow = "none";
+      }
+    });
+
+    // 사운드 알림 토글
+    const btnSound = document.getElementById("btn-sound");
+    btnSound.addEventListener("click", () => {
+      isSoundOn = !isSoundOn;
+      if (isSoundOn) {
+        btnSound.textContent = "🔊 소리켬";
+        btnSound.className = "px-2 py-0.5 rounded font-bold bg-emerald-700 text-white shadow active:scale-95 transition-all text-[9px]";
+      } else {
+        btnSound.textContent = "🔇 무음";
+        btnSound.className = "px-2 py-0.5 rounded font-bold bg-neutral-600 text-neutral-300 shadow active:scale-95 transition-all text-[9px]";
+      }
+      playClick();
+    });
+
+    // 4방향 원형 리플레이 조이스틱
+    document.getElementById("btn-left").addEventListener("click", () => {
+      playClick();
+      if (cursorPos > 0) cursorPos--;
+      resetModifiers();
+      renderScreen();
+    });
+
+    document.getElementById("btn-right").addEventListener("click", () => {
+      playClick();
+      if (cursorPos < inputExpr.length) cursorPos++;
+      resetModifiers();
+      renderScreen();
+    });
+
+    document.getElementById("btn-up").addEventListener("click", () => {
+      playClick();
+      if (history.length > 0) {
+        if (historyIndex === -1) {
+          historyIndex = history.length - 1;
+        } else if (historyIndex > 0) {
+          historyIndex--;
+        }
+        inputExpr = history[historyIndex].expr;
+        cursorPos = inputExpr.length;
+        lcdResult.textContent = history[historyIndex].res;
+      }
+      resetModifiers();
+      renderScreen();
+    });
+
+    document.getElementById("btn-down").addEventListener("click", () => {
+      playClick();
+      if (history.length > 0 && historyIndex !== -1) {
+        if (historyIndex < history.length - 1) {
+          historyIndex++;
+          inputExpr = history[historyIndex].expr;
+          cursorPos = inputExpr.length;
+          lcdResult.textContent = history[historyIndex].res;
+        } else {
+          historyIndex = -1;
+          inputExpr = "";
+          cursorPos = 0;
+          lcdResult.textContent = "0";
+        }
+      }
+      resetModifiers();
+      renderScreen();
+    });
+
+    document.getElementById("btn-shift").addEventListener("click", () => {
+      playClick();
+      isShift = !isShift;
+      isAlpha = false;
+      renderScreen();
+    });
+
+    document.getElementById("btn-alpha").addEventListener("click", () => {
+      playClick();
+      isAlpha = !isAlpha;
+      isShift = false;
+      renderScreen();
+    });
+
+    document.getElementById("btn-mode").addEventListener("click", () => {
+      playClick();
+      angleMode = (angleMode === "DEG") ? "RAD" : "DEG";
+      resetModifiers();
+      renderScreen();
+    });
+
+    function resetModifiers() {
+      isShift = false;
+      isAlpha = false;
+    }
+
+    function insertAtCursor(text) {
+      const before = inputExpr.slice(0, cursorPos);
+      const after = inputExpr.slice(cursorPos);
+      inputExpr = before + text + after;
+      cursorPos += text.length;
+    }
+
+    function pressKey(key) {
+      playClick();
+
+      if (key === 'AC') {
+        inputExpr = "";
+        cursorPos = 0;
+        lcdResult.textContent = "0";
+        historyIndex = -1;
+        resetModifiers();
+        renderScreen();
+        return;
+      }
+
+      if (key === 'DEL') {
+        if (cursorPos > 0) {
+          const before = inputExpr.slice(0, cursorPos - 1);
+          const after = inputExpr.slice(cursorPos);
+          inputExpr = before + after;
+          cursorPos--;
+        }
+        resetModifiers();
+        renderScreen();
+        return;
+      }
+
+      if (key === 'M+') {
+        evaluateMemoryChange(true);
+        resetModifiers();
+        renderScreen();
+        return;
+      }
+      if (key === 'M-') {
+        evaluateMemoryChange(false);
+        resetModifiers();
+        renderScreen();
+        return;
+      }
+
+      if (key === 'STO') {
+        try {
+          const res = parseFloat(lcdResult.textContent);
+          if (!isNaN(res)) {
+            memoryValue = res;
+            lcdResult.textContent = "M ← " + res;
+          }
+        } catch(e) {
+          lcdResult.textContent = "Syn ERROR";
+        }
+        resetModifiers();
+        renderScreen();
+        return;
+      }
+
+      if (key === 'RCL') {
+        insertAtCursor('M');
+        resetModifiers();
+        renderScreen();
+        return;
+      }
+
+      if (key === 'Ran#') {
+        const rand = Math.random().toFixed(3);
+        insertAtCursor(rand);
+        resetModifiers();
+        renderScreen();
+        return;
+      }
+
+      let actualKey = key;
+      if (isShift) {
+        if (key === '²') actualKey = '³';
+        else if (key === '^') actualKey = '^-1';
+      }
+
+      insertAtCursor(actualKey);
+      resetModifiers();
+      renderScreen();
+    }
+
+    function pressFunc(funcName) {
+      playClick();
+      let expression = funcName + "(";
+      if (isShift) {
+        expression = funcName + "⁻¹(";
+      }
+      insertAtCursor(expression);
+      resetModifiers();
+      renderScreen();
+    }
+
+    function pressConstant() {
+      playClick();
+      if (isShift) {
+        insertAtCursor("e");
+      } else {
+        insertAtCursor("π");
+      }
+      resetModifiers();
+      renderScreen();
+    }
+
+    function evaluateMemoryChange(isAdd) {
+      try {
+        const evalString = translateExpression(inputExpr);
+        const tempRes = eval(evalString);
+        if (typeof tempRes === 'number' && !isNaN(tempRes)) {
+          memoryValue = isAdd ? (memoryValue + tempRes) : (memoryValue - tempRes);
+          lcdResult.textContent = "M: " + memoryValue.toFixed(4);
+        }
+      } catch(e) {
+        lcdResult.textContent = "Syn ERROR";
+      }
+    }
+
+    function translateExpression(rawExpr) {
+      let formatted = rawExpr;
+      formatted = formatted.replace(/×/g, '*').replace(/÷/g, '/');
+      formatted = formatted.replace(/π/g, 'Math.PI').replace(/e/g, 'Math.E');
+      formatted = formatted.replace(/M/g, `(${memoryValue})`);
+
+      formatted = formatted.replace(/(\d+(\.\d+)?|Math\.PI|Math\.E|\([^)]+\))²/g, 'Math.pow($1,2)');
+      formatted = formatted.replace(/(\d+(\.\d+)?|Math\.PI|Math\.E|\([^)]+\))³/g, 'Math.pow($1,3)');
+      
+      while (formatted.includes('^')) {
+        formatted = formatted.replace(/([0-9.]+|Math\.PI|Math\.E|\([^)]+\))\^([0-9.]+|Math\.PI|Math\.E|\([^)]+\))/g, 'Math.pow($1,$2)');
+      }
+
+      const radFactor = (angleMode === 'DEG') ? '(Math.PI/180)' : '1';
+      
+      formatted = formatted.replace(/sin⁻¹\(/g, `(180/Math.PI)*Math.asin(`);
+      formatted = formatted.replace(/cos⁻¹\(/g, `(180/Math.PI)*Math.acos(`);
+      formatted = formatted.replace(/tan⁻¹\(/g, `(180/Math.PI)*Math.atan(`);
+
+      formatted = formatted.replace(/sin\(/g, `Math.sin(${radFactor}*`);
+      formatted = formatted.replace(/cos\(/g, `Math.cos(${radFactor}*`);
+      formatted = formatted.replace(/tan\(/g, `Math.tan(${radFactor}*`);
+
+      formatted = formatted.replace(/ln\(/g, 'Math.log(');
+      formatted = formatted.replace(/log\(/g, 'Math.log10(');
+      formatted = formatted.replace(/√\(/g, 'Math.sqrt(').replace(/∛\(/g, 'Math.cbrt(');
+
+      const fact = (n) => {
+        if (n < 0) return NaN;
+        if (n === 0 || n === 1) return 1;
+        let r = 1;
+        for (let i = 2; i <= n; i++) r *= i;
+        return r;
+      };
+      formatted = formatted.replace(/(\d+)!/g, (match, num) => fact(parseInt(num)));
+      formatted = formatted.replace(/(\d+)(Math|e|\()/g, '$1*$2');
+      formatted = formatted.replace(/(\))(Math|e|\d)/g, '$1*$2');
+
+      return formatted;
+    }
+
+    function calculate() {
+      playClick();
+      if (!inputExpr.trim()) return;
+
+      try {
+        const trans = translateExpression(inputExpr);
+        let calculated = eval(trans);
+
+        if (typeof calculated === 'number') {
+          if (!isFinite(calculated)) {
+            throw new Error('Infinite');
+          }
+          if (Math.abs(calculated) < 1e-10 && calculated !== 0) {
+            calculated = 0;
+          } else if (Math.abs(calculated) >= 1e12 || (Math.abs(calculated) < 1e-4 && calculated !== 0)) {
+            calculated = calculated.toExponential(8);
+          } else {
+            calculated = parseFloat(calculated.toFixed(10));
+          }
+        }
+
+        const stringResult = String(calculated);
+        lcdResult.textContent = stringResult;
+
+        history.push({ expr: inputExpr, res: stringResult });
+        if (history.length > 20) history.shift();
+        historyIndex = -1;
+
+      } catch (err) {
+        lcdResult.textContent = "Syn ERROR";
+      }
+
+      resetModifiers();
+      renderScreen();
+    }
+  </script>
+</body>
+</html>
+
+```
